@@ -1,0 +1,7 @@
+[
+  {
+    "id": "prompt-001",
+    "template": "My Lockheed Martin internship was a mess. Instead of building a bomb, I built a {0} {1} and got fired.",
+    "slots": ["adjective", "noun"]
+  }
+]

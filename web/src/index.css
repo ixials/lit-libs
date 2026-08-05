@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Lazydog";
+  src: url("/fonts/lazydog.TTF") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  background-color: #ffd9ef;
+  margin: 0;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+/* Track */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #0055ff 0%,
+    #0055ff var(--progress),
+    #e2e8f0 var(--progress),
+    #e2e8f0 100%
+  );
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #0055ff 0%,
+    #0055ff var(--progress),
+    #e2e8f0 var(--progress),
+    #e2e8f0 100%
+  );
+}
+
+/* Thumb */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -5px;
+  height: 16px;
+  width: 16px;
+  border-radius: 9999px;
+  background: #0055ff;
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border: none;
+  border-radius: 9999px;
+  background: #0055ff;
+  cursor: pointer;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb,
+input[type="range"]:active::-webkit-slider-thumb,
+input[type="range"]:focus::-webkit-slider-thumb {
+  background: #0055ff;
+}

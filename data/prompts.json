@@ -1,0 +1,27 @@
+[
+  {
+    "id": "prompt-001",
+    "template": "When Jami was young, she always tried to {0} in her sleep. Before long, she realized her bed was too {1}. She hired her {2} to fix it, until later that night, her bed decided to {3} her.",
+    "slots": ["verb", "adjective", "noun", "verb"]
+  },
+  {
+    "id": "prompt-002",
+    "template": "My {0} showed up to the party and immediately started to {1}. Everyone agreed it was extremely {2}.",
+    "slots": ["noun", "verb", "adjective"]
+  },
+  {
+    "id": "prompt-003",
+    "template": "The therapist asked why I felt so {0} lately. I explained that my {1} keeps trying to {2} me every time we hang out.",
+    "slots": ["adjective", "noun", "verb"]
+  },
+  {
+    "id": "prompt-004",
+    "template": "Breaking news: local {0} arrested for attempting to {1} an entire {2} convention single-handedly.",
+    "slots": ["noun", "verb", "adjective"]
+  },
+  {
+    "id": "prompt-005",
+    "template": "Step 1: find a {0} you trust. Step 2: convince them to {1} with you. Step 3: hope nobody finds out how {2} the whole thing was.",
+    "slots": ["noun", "verb", "adjective"]
+  }
+]
