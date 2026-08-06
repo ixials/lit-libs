@@ -133,13 +133,37 @@ io.on("connection", (socket) => {
   });
 
   socket.on("leave_room", ({ code }) => {
-    game.removePlayerBySocket(socket.id);
+    const entry = game.removePlayerBySocket(socket.id);
+    const player = entry?.room.players.find((p) => p.id === entry.playerId);
+    if (player) {
+      const msg = game.buildChatMessage(
+        player.id,
+        player.name,
+        player.color,
+        "has left the room",
+        "system",
+      );
+      io.to(code).emit("chat_message", msg);
+    }
     socket.leave(code);
     broadcastRoom(code);
   });
 
   socket.on("disconnect", () => {
     const entry = game.removePlayerBySocket(socket.id);
+
+    if (!entry) return;
+
+    if (entry.playerId) {
+      const msg = game.buildChatMessage(
+        entry.playerId,
+        entry.playerName,
+        entry.playerColor,
+        "disconnected",
+        "system",
+      );
+      io.to(entry.room.code).emit("chat_message", msg);
+    }
     if (entry) broadcastRoom(entry.room.code);
   });
 });

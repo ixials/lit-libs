@@ -429,9 +429,12 @@ export class GameManager {
     };
   }
 
-  removePlayerBySocket(
-    socketId: string,
-  ): { room: InternalRoom; playerId: string } | null {
+  removePlayerBySocket(socketId: string): {
+    room: InternalRoom;
+    playerId: string;
+    playerName: string;
+    playerColor: string;
+  } | null {
     const entry = this.socketToPlayer.get(socketId);
     if (!entry) return null;
     this.socketToPlayer.delete(socketId);
@@ -439,7 +442,14 @@ export class GameManager {
     if (!room) return null;
 
     const idx = room.players.findIndex((p) => p.id === entry.playerId);
-    if (idx === -1) return { room, playerId: entry.playerId };
+    const player = room.players[idx];
+    if (idx === -1)
+      return {
+        room,
+        playerId: player.id,
+        playerName: player.name,
+        playerColor: player.color,
+      };
 
     const wasHost = room.hostId === entry.playerId;
     const wasJudge = room.judgeId === entry.playerId;
@@ -452,7 +462,12 @@ export class GameManager {
 
     if (room.players.length === 0) {
       this.rooms.delete(room.code);
-      return { room, playerId: entry.playerId };
+      return {
+        room,
+        playerId: player.id,
+        playerName: player.name,
+        playerColor: player.color,
+      };
     }
 
     if (wasHost) {
@@ -470,7 +485,12 @@ export class GameManager {
       room.status = "judging";
     }
 
-    return { room, playerId: entry.playerId };
+    return {
+      room,
+      playerId: player.id,
+      playerName: player.name,
+      playerColor: player.color,
+    };
   }
 
   buildChatMessage(
@@ -478,6 +498,7 @@ export class GameManager {
     playerName: string,
     color: string,
     text: string,
+    type: "player" | "system" = "player",
   ): ChatMessage {
     return {
       playerId,
@@ -485,6 +506,7 @@ export class GameManager {
       color,
       text: text.slice(0, 300),
       ts: Date.now(),
+      type,
     };
   }
 

@@ -77,6 +77,7 @@ export interface ChatMessage {
   color: string;
   text: string;
   ts: number;
+  type: "player" | "system";
 }
 
 // ---- Socket event payloads ----
