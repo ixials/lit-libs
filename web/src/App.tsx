@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { socket } from "./lib/socket";
-import type { Card, ChatMessage, RoomState } from "./lib/types";
+import type { Card, ChatMessage, RoomState, Category } from "./lib/types";
 import { Home } from "./components/Home";
 import { Lobby } from "./components/Lobby";
 import { GameScreen } from "./components/GameScreen";
@@ -72,6 +72,11 @@ export default function App() {
     setMessages([]);
   }
 
+  function trashCard(category: Category, cardId: string) {
+    if (!room) return;
+    socket.emit("trash_card", { code: room.code, category, cardId });
+  }
+
   function lockSubmission(cardIds: string[]) {
     if (!room) return;
     socket.emit("lock_submission", { code: room.code, cardIds });
@@ -111,6 +116,7 @@ export default function App() {
       hand={hand}
       myPlayerId={myPlayerId}
       messages={messages}
+      onTrash={trashCard}
       onLock={lockSubmission}
       onSelectWinner={selectWinner}
       onSendChat={sendChat}

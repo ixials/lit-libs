@@ -1,4 +1,5 @@
 import { Logo } from "./Logo";
+import { RotateCw, Trash } from "lucide-react";
 
 export function InfoPanel() {
   return (
@@ -11,11 +12,21 @@ export function InfoPanel() {
         <label className="font-display text-xl">HOW TO PLAY</label>
 
         <div className="mb-6 shrink-0 text-base text-slate-600">
-          Each round, players will be shown a prompt. Use{" "}
+          Each round, players will be shown a prompt and a hand of{" "}
           <span className="text-lime-400 font-bold">Noun</span>,
           <span className="text-fuchsia-500 font-bold"> Verb</span>, or
-          <span className="text-pink-500 font-bold"> Adjective</span> cards to
-          fill the corresponding blanks and craft the winning sentence!
+          <span className="text-pink-500 font-bold"> Adjective</span> cards. You
+          can click{" "}
+          <span className="inline-flex items-center gap-1 font-semibold">
+            <RotateCw size={14} strokeWidth={3} />
+          </span>{" "}
+          on each card to view the etymology and point value of the word. You
+          can also click{" "}
+          <span className="inline-flex items-center gap-1 font-semibold">
+            <Trash size={14} strokeWidth={3} />
+          </span>{" "}
+          to trade in one card per round. Win by filling in the blanks to craft
+          the best sentence!
         </div>
 
         <hr className="mb-6 border-ll-blue" />

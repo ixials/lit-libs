@@ -85,6 +85,7 @@ interface InternalRoom {
   roundNumber: number;
   hands: Map<string, Record<Category, Card[]>>; // playerId, hand
   decks: Record<Category, CategoryDeck>;
+  trashedPlayerIds: Set<string>;
   submissions: InternalSubmission[];
   usedPromptIds: Set<string>;
   lastRoundResult: RoundResult | null;
@@ -127,6 +128,7 @@ export class GameManager {
       roundNumber: 0,
       hands: new Map(),
       decks: freshDecks(),
+      trashedPlayerIds: new Set(),
       submissions: [],
       usedPromptIds: new Set(),
       lastRoundResult: null,
@@ -237,6 +239,7 @@ export class GameManager {
     room.judgeId = room.players[0].id;
     room.currentPrompt = this.pickPrompt(room);
     room.roundNumber = 1;
+    room.trashedPlayerIds.clear();
     room.submissions = [];
     room.status = "playing";
     room.lastRoundResult = null;
@@ -249,6 +252,7 @@ export class GameManager {
 
     room.players.forEach((p) => (p.score = 0));
     room.hands.clear();
+    room.trashedPlayerIds.clear();
     room.submissions = [];
     room.currentPrompt = null;
     room.judgeId = null;
@@ -259,6 +263,40 @@ export class GameManager {
     room.status = "lobby";
 
     return room;
+  }
+
+  trashCard(
+    code: string,
+    playerId: string,
+    category: Category,
+    cardId: string,
+  ): { room: InternalRoom } | { error: string } {
+    const room = this.rooms.get(code);
+    if (!room) return { error: "Room not found" };
+    if (room.status !== "playing")
+      return { error: "Can only trash cards while playing" };
+    if (playerId === room.judgeId)
+      return { error: "The judge cannot trash cards" };
+    if (room.trashedPlayerIds.has(playerId))
+      return { error: "You already trashed a card this round" };
+
+    const hand = room.hands.get(playerId);
+    if (!hand) return { error: "No hand found" };
+    const idx = hand[category].findIndex((c) => c.id === cardId);
+    if (idx === -1) return { error: "Card not in hand" };
+
+    room.decks[category].discardPile.push(cardId);
+
+    const [replacement] = this.drawFromDeck(room, category, 1);
+
+    if (replacement) {
+      hand[category][idx] = replacement;
+    } else {
+      hand[category].splice(idx, 1);
+    }
+
+    room.trashedPlayerIds.add(playerId);
+    return { room };
   }
 
   submitCards(
@@ -369,6 +407,7 @@ export class GameManager {
 
     room.currentPrompt = this.pickPrompt(room);
     room.roundNumber += 1;
+    room.trashedPlayerIds.clear();
     room.submissions = [];
     room.status = "playing";
     room.lastRoundResult = null;
@@ -379,7 +418,15 @@ export class GameManager {
 
   getHandFor(code: string, playerId: string) {
     const room = this.rooms.get(code);
-    return room?.hands.get(playerId) ?? { noun: [], verb: [], adjective: [] };
+    const hand = room?.hands.get(playerId) ?? {
+      noun: [],
+      verb: [],
+      adjective: [],
+    };
+    return {
+      ...hand,
+      hasTrashed: room?.trashedPlayerIds.has(playerId) ?? false,
+    };
   }
 
   removePlayerBySocket(

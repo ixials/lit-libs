@@ -75,6 +75,17 @@ io.on("connection", (socket) => {
     broadcastRoom(code);
   });
 
+  socket.on("trash_card", ({ code, category, cardId }) => {
+    const entry = game.getRoomForSocket(socket.id);
+    if (!entry) return;
+    const result = game.trashCard(code, entry.playerId, category, cardId);
+    if ("error" in result) {
+      socket.emit("error_message", result.error);
+      return;
+    }
+    broadcastRoom(code);
+  });
+
   socket.on("lock_submission", ({ code, cardIds }) => {
     const entry = game.getRoomForSocket(socket.id);
     if (!entry) return;

@@ -16,9 +16,7 @@ export interface Card {
 
 export interface Prompt {
   id: string;
-  /** Sentence with {0}, {1}, {2}... placeholders, filled in slot order */
   template: string;
-  /** Category required for each placeholder, in order */
   slots: Category[];
 }
 
@@ -40,14 +38,14 @@ export type RoomStatus =
 
 export interface Submission {
   playerId: string;
-  cardIds: string[]; // one id per slot, aligned to prompt.slots order
+  cardIds: string[];
   locked: boolean;
 }
 
 export interface RoomSettings {
-  timeLimit: number | null; // seconds per submission round, null = none
-  targetScore: number; // first to reach this score wins the game
-  handSize: number; // cards held per category
+  timeLimit: number | null;
+  targetScore: number;
+  handSize: number;
 }
 
 export interface RoomState {
@@ -100,6 +98,11 @@ export interface ClientToServerEvents {
   ) => void;
   start_game: (data: { code: string }) => void;
   replay_game: (data: { code: string }) => void;
+  trash_card: (data: {
+    code: string;
+    category: Category;
+    cardId: string;
+  }) => void;
   lock_submission: (data: { code: string; cardIds: string[] }) => void;
   select_winner: (data: { code: string; submissionIndex: number }) => void;
   send_chat: (data: { code: string; text: string }) => void;
@@ -108,7 +111,12 @@ export interface ClientToServerEvents {
 
 export interface ServerToClientEvents {
   room_update: (state: RoomState) => void;
-  your_hand: (hand: { noun: Card[]; verb: Card[]; adjective: Card[] }) => void;
+  your_hand: (hand: {
+    noun: Card[];
+    verb: Card[];
+    adjective: Card[];
+    hasTrashed: boolean;
+  }) => void;
   chat_message: (msg: ChatMessage) => void;
   error_message: (msg: string) => void;
 }

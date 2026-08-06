@@ -4,9 +4,14 @@ import { SlangCard } from "./SlangCard";
 import { PromptSentence } from "./PromptSentence";
 import { Scoreboard } from "./Scoreboard";
 import { Chat } from "./Chat";
-import { ArrowLeft, ArrowRight, RotateCw, ZoomIn } from "lucide-react";
+import { ArrowLeft, ArrowRight, RotateCw, ZoomIn, Trash } from "lucide-react";
 
-type Hand = { noun: Card[]; verb: Card[]; adjective: Card[] };
+type Hand = {
+  noun: Card[];
+  verb: Card[];
+  adjective: Card[];
+  hasTrashed?: boolean;
+};
 type Stacks = Record<Category, string[]>;
 
 const CATEGORIES: Category[] = ["noun", "verb", "adjective"];
@@ -22,6 +27,7 @@ export function GameScreen({
   hand,
   myPlayerId,
   messages,
+  onTrash,
   onLock,
   onSelectWinner,
   onSendChat,
@@ -32,6 +38,7 @@ export function GameScreen({
   hand: Hand;
   myPlayerId: string;
   messages: ChatMessage[];
+  onTrash: (category: Category, cardId: string) => void;
   onLock: (cardIds: string[]) => void;
   onSelectWinner: (submissionIndex: number) => void;
   onSendChat: (text: string) => void;
@@ -42,6 +49,7 @@ export function GameScreen({
   const judge = room.players.find((p) => p.id === room.judgeId);
   const nonJudgeCount = room.players.length - 1;
   const allCards = [...hand.noun, ...hand.verb, ...hand.adjective];
+  const hasTrashed = hand.hasTrashed ?? false;
   const slots = room.currentPrompt?.slots ?? [];
 
   const [assigned, setAssigned] = useState<(Card | null)[]>([]);
@@ -75,7 +83,7 @@ export function GameScreen({
         const missing = hand[cat]
           .map((c) => c.id)
           .filter((id) => !kept.includes(id));
-        next[cat] = [...missing, ...kept];
+        next[cat] = [...kept, ...missing];
       });
       return next;
     });
@@ -206,6 +214,9 @@ export function GameScreen({
 
     useEffect(() => {
       if (targetMs === null) return;
+
+      setNow(Date.now());
+
       const timer = setInterval(() => {
         setNow(Date.now());
       }, 250);
@@ -393,14 +404,28 @@ export function GameScreen({
                           onClick={() => handleStackCardClick(card)}
                         />
                         {isTop && canPick && (
-                          <>
+                          <div className="absolute -right-10 bottom-2 z-30 flex flex-col gap-2">
+                            {!hasTrashed && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onTrash(card.category, card.id);
+                                }}
+                                className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
+                                aria-label="Trash card"
+                              >
+                                <Trash size={14} strokeWidth={3} />
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setZoomedCard(card);
                               }}
-                              className="absolute -right-10 bottom-12 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
                               aria-label="Zoom card"
                             >
                               <ZoomIn size={14} strokeWidth={3} />
@@ -411,12 +436,12 @@ export function GameScreen({
                                 e.stopPropagation();
                                 toggleFlip(id);
                               }}
-                              className="absolute -right-10 bottom-2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
                               aria-label="Flip card"
                             >
                               <RotateCw size={14} strokeWidth={3} />
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     );
@@ -479,10 +504,10 @@ export function GameScreen({
                   onClick={() =>
                     toggleFlip(mobileFlatOrder[mobileFocusedIndex].id)
                   }
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
                   aria-label="Flip card"
                 >
-                  <RotateCw size={16} strokeWidth={3} />
+                  <RotateCw size={14} strokeWidth={3} />
                 </button>
                 <button
                   type="button"
@@ -492,11 +517,24 @@ export function GameScreen({
                     );
                     if (focusedCard) setZoomedCard(focusedCard);
                   }}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
                   aria-label="Zoom card"
                 >
-                  <ZoomIn size={16} strokeWidth={3} />
+                  <ZoomIn size={14} strokeWidth={3} />
                 </button>
+                {!hasTrashed && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      const entry = mobileFlatOrder[mobileFocusedIndex];
+                      onTrash(entry.category, entry.id);
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
+                    aria-label="Trash card"
+                  >
+                    <Trash size={14} strokeWidth={3} />
+                  </button>
+                )}
               </div>
             )}
           </div>

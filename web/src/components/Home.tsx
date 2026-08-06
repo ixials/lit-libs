@@ -86,7 +86,7 @@ export function Home({
               <div className="mb-6">
                 <h2 className="mb-3 font-display text-xl">CREATE ROOM</h2>
                 <div className="mb-4 flex items-center gap-3">
-                  <span className="text-sm">Time Limit</span>
+                  <span className="text-sm text-slate-600">Time Limit</span>
                   <input
                     type="range"
                     min={0}
