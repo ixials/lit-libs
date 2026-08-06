@@ -224,7 +224,7 @@ export function GameScreen({
       <div className="flex flex-col gap-4">
         {room.status === "playing" && isJudge && room.currentPrompt && (
           <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-3">
-            <h2 className="font-display text-2xl font-extrabold">
+            <h2 className="font-display text-2xl">
               <span className="text-ll-blue">YOU</span> ARE JUDGING!
             </h2>
             <PromptSentence
@@ -245,7 +245,7 @@ export function GameScreen({
 
         {room.status === "playing" && !isJudge && room.currentPrompt && (
           <div className="rounded-xl border border-ll-blue bg-white p-6 space-y-3">
-            <h2 className="text-center font-display text-2xl font-extrabold">
+            <h2 className="text-center font-display text-2xl">
               <span className="text-ll-blue">{judge?.name ?? "..."}</span> is
               judging!
             </h2>
@@ -259,14 +259,14 @@ export function GameScreen({
               <div className="flex justify-center gap-3">
                 <button
                   onClick={reset}
-                  className="rounded-lg bg-red-400 px-6 py-2 font-display font-bold text-white text-xl"
+                  className="rounded-lg bg-red-400 px-6 py-2 font-display text-white text-xl"
                 >
                   Reset
                 </button>
                 <button
                   onClick={lockIn}
                   disabled={!allFilled}
-                  className="rounded-lg bg-ll-blue px-6 py-2 font-display font-bold text-white text-xl disabled:opacity-50"
+                  className="rounded-lg bg-ll-blue px-6 py-2 font-display text-white text-xl disabled:opacity-50"
                 >
                   Lock
                 </button>
@@ -293,7 +293,7 @@ export function GameScreen({
 
         {room.status === "round_end" && room.lastRoundResult && (
           <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-3">
-            <h2 className="font-display text-2xl font-extrabold">
+            <h2 className="font-display text-2xl">
               <span className="text-ll-blue">
                 {room.lastRoundResult.winnerName}
               </span>{" "}
@@ -318,9 +318,7 @@ export function GameScreen({
 
         {room.status === "game_over" && (
           <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-3">
-            <h2 className="font-display text-2xl font-extrabold text-ll-blue">
-              GAME OVER!
-            </h2>
+            <h2 className="font-display text-2xl text-ll-blue">GAME OVER!</h2>
 
             <div className="flex h-[120px] items-center justify-center">
               <p className="text-lg">
@@ -336,13 +334,13 @@ export function GameScreen({
             <div className="flex justify-center gap-6">
               <button
                 onClick={onQuit}
-                className="rounded-lg bg-red-400 px-6 py-2 font-display font-bold text-white text-xl"
+                className="rounded-lg bg-red-400 px-6 py-2 font-display text-white text-xl"
               >
                 Quit
               </button>
               <button
                 onClick={onReplay}
-                className="rounded-lg bg-ll-blue px-6 py-2 font-display font-bold text-white text-xl"
+                className="rounded-lg bg-ll-blue px-6 py-2 font-display text-white text-xl"
               >
                 Replay
               </button>
@@ -550,7 +548,7 @@ function JudgingPanel({
 
   return (
     <div className="text-center space-y-3">
-      <h2 className="font-display text-2xl font-extrabold">
+      <h2 className="font-display text-2xl">
         {isJudge ? (
           <>
             <span className="text-ll-blue">You</span> are judging!
@@ -595,7 +593,7 @@ function JudgingPanel({
       {isJudge && submission && (
         <button
           onClick={() => onSelectWinner(index)}
-          className="rounded-lg bg-ll-blue px-10 py-2 font-display font-bold text-white text-xl"
+          className="rounded-lg bg-ll-blue px-10 py-2 font-display text-white text-xl"
         >
           Select
         </button>

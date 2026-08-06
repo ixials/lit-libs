@@ -100,6 +100,7 @@ export default function App() {
         isHost={myPlayerId === room.hostId}
         myPlayerId={myPlayerId}
         onStart={startGame}
+        onExit={quitToTitle}
       />
     );
   }
