@@ -19,11 +19,32 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
 
 const game = new GameManager();
 
+function scheduleSubmissionTimeout(code: string) {
+  const room = game.getRoom(code);
+  if (!room || !room.submissionEndsAt) return;
+  const delay = room.submissionEndsAt - Date.now();
+
+  setTimeout(
+    () => {
+      const r = game.getRoom(code);
+      if (
+        r &&
+        r.status === "playing" &&
+        r.submissionEndsAt &&
+        Date.now() >= r.submissionEndsAt - 50
+      ) {
+        const result = game.autoSubmitTimedOutPlayers(code);
+        if (!("error" in result)) broadcastRoom(code);
+      }
+    },
+    Math.max(0, delay),
+  );
+}
 function broadcastRoom(code: string) {
   const room = game.getRoom(code);
   if (!room) return;
   room.players.forEach((p) => {
-    // each player gets their own hand privately, and a public view of room state
+    // Each player gets their own hand privately and a public view of room state
     const socketEntry = [...io.sockets.sockets.values()].find(
       (s) => game.getRoomForSocket(s.id)?.playerId === p.id,
     );
@@ -60,6 +81,7 @@ io.on("connection", (socket) => {
         return;
       }
       broadcastRoom(code);
+      scheduleSubmissionTimeout(code);
     } catch (err) {
       console.error("start_game crashed:", err);
       socket.emit("error_message", "Server error starting game");
@@ -113,6 +135,7 @@ io.on("connection", (socket) => {
       if (r && r.status === "round_end") {
         game.advanceRound(code);
         broadcastRoom(code);
+        scheduleSubmissionTimeout(code);
       }
     }, 5000);
   });
@@ -147,6 +170,7 @@ io.on("connection", (socket) => {
     }
     socket.leave(code);
     broadcastRoom(code);
+    scheduleSubmissionTimeout(code);
   });
 
   socket.on("disconnect", () => {
@@ -164,7 +188,10 @@ io.on("connection", (socket) => {
       );
       io.to(entry.room.code).emit("chat_message", msg);
     }
-    if (entry) broadcastRoom(entry.room.code);
+    if (entry) {
+      broadcastRoom(entry.room.code);
+      scheduleSubmissionTimeout(entry.room.code);
+    }
   });
 });
 

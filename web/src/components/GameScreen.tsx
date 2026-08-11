@@ -5,6 +5,8 @@ import { PromptSentence } from "./PromptSentence";
 import { Scoreboard } from "./Scoreboard";
 import { Chat } from "./Chat";
 import { ArrowLeft, ArrowRight, RotateCw, ZoomIn, Trash } from "lucide-react";
+import { useCountdown } from "../lib/useCountdown";
+import { CountdownRing } from "./CountdownRing";
 
 type Hand = {
   noun: Card[];
@@ -279,86 +281,78 @@ export function GameScreen({
   const filledText = assigned.map((c) => c?.text.toLowerCase() ?? null);
 
   const winner = [...room.players].sort((a, b) => b.score - a.score)[0];
-
-  function useCountDown(targetMs: number | null): number | null {
-    const [now, setNow] = useState<number>(Date.now());
-
-    useEffect(() => {
-      if (targetMs === null) return;
-
-      setNow(Date.now());
-
-      const timer = setInterval(() => {
-        setNow(Date.now());
-      }, 250);
-      return () => clearInterval(timer);
-    }, [targetMs]);
-
-    return targetMs === null
-      ? null
-      : Math.max(0, Math.ceil((targetMs - now) / 1000));
-  }
-
-  const secondsLeft = useCountDown(room.roundEndsAt);
+  const secondsLeft = useCountdown(room.roundEndsAt);
 
   return (
     <div className="mx-auto grid min-h-screen max-w-6xl grid-cols-1 gap-4 p-6 lg:grid-cols-[1fr_320px]">
       <div className="flex flex-col gap-4">
         {room.status === "playing" && isJudge && room.currentPrompt && (
-          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-3">
-            <h2 className="font-display text-2xl">
-              <span className="text-ll-blue">YOU</span> ARE JUDGING!
-            </h2>
-            <PromptSentence
-              template={room.currentPrompt.template}
-              slots={room.currentPrompt.slots}
-              filledText={room.currentPrompt.slots.map(() => null)}
+          <div className="relative rounded-xl border border-ll-blue bg-white p-6 text-center">
+            <CountdownRing
+              endsAt={room.submissionEndsAt}
+              totalSeconds={room.settings.timeLimit ?? 1}
             />
+            <div className="space-y-3">
+              <h2 className="font-display text-2xl">
+                <span className="text-ll-blue">YOU</span> ARE JUDGING!
+              </h2>
+              <PromptSentence
+                template={room.currentPrompt.template}
+                slots={room.currentPrompt.slots}
+                filledText={room.currentPrompt.slots.map(() => null)}
+              />
 
-            <p className="italic text-slate-400">
-              Waiting on {Math.max(0, nonJudgeCount - room.submittedCount)}{" "}
-              {Math.max(0, nonJudgeCount - room.submittedCount) === 1
-                ? "player"
-                : "players"}
-              ...
-            </p>
+              <p className="italic text-slate-400">
+                Waiting on {Math.max(0, nonJudgeCount - room.submittedCount)}{" "}
+                {Math.max(0, nonJudgeCount - room.submittedCount) === 1
+                  ? "player"
+                  : "players"}
+                ...
+              </p>
+            </div>
           </div>
         )}
 
         {room.status === "playing" && !isJudge && room.currentPrompt && (
-          <div className="rounded-xl border border-ll-blue bg-white p-6 space-y-3">
-            <h2 className="text-center font-display text-2xl">
-              <span className="text-ll-blue">{judge?.name ?? "..."}</span> is
-              judging!
-            </h2>
-            <PromptSentence
-              template={room.currentPrompt.template}
-              slots={room.currentPrompt.slots}
-              filledText={filledText}
-              onBlankClick={canPick ? clearSlot : undefined}
+          <div className="relative rounded-xl border border-ll-blue bg-white p-6">
+            <CountdownRing
+              endsAt={room.submissionEndsAt}
+              totalSeconds={room.settings.timeLimit ?? 1}
             />
-            {canPick && (
-              <div className="flex justify-center gap-3">
-                <button
-                  onClick={reset}
-                  className="rounded-lg bg-red-400 px-6 py-2 font-display text-white text-xl"
-                >
-                  Reset
-                </button>
-                <button
-                  onClick={lockIn}
-                  disabled={!allFilled}
-                  className="rounded-lg bg-ll-blue px-6 py-2 font-display text-white text-xl disabled:opacity-50"
-                >
-                  Lock
-                </button>
-              </div>
-            )}
-            {locked && (
-              <p className="text-center italic text-slate-400">
-                Cards locked in! Waiting on other players...
-              </p>
-            )}
+            <div className="space-y-3">
+              <h2 className="text-center font-display text-2xl">
+                <span className="text-ll-blue">{judge?.name ?? "..."}</span> is
+                judging!
+              </h2>
+              <PromptSentence
+                template={room.currentPrompt.template}
+                slots={room.currentPrompt.slots}
+                filledText={filledText}
+                onBlankClick={canPick ? clearSlot : undefined}
+              />
+              {canPick && (
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={reset}
+                    className="rounded-lg bg-red-400 px-6 py-2 font-display text-white text-xl"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={lockIn}
+                    disabled={!allFilled}
+                    className="rounded-lg bg-ll-blue px-6 py-2 font-display text-white text-xl disabled:opacity-50"
+                  >
+                    Lock
+                  </button>
+                </div>
+              )}
+              {locked && (
+                <p className="text-center italic text-slate-400">
+                  Cards locked in! Waiting on other players...
+                </p>
+              )}
+            </div>
           </div>
         )}
 

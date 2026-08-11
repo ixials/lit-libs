@@ -88,6 +88,7 @@ interface InternalRoom {
   trashedPlayerIds: Set<string>;
   submissions: InternalSubmission[];
   usedPromptIds: Set<string>;
+  submissionEndsAt: number | null;
   lastRoundResult: RoundResult | null;
   roundEndsAt: number | null;
 }
@@ -131,6 +132,7 @@ export class GameManager {
       trashedPlayerIds: new Set(),
       submissions: [],
       usedPromptIds: new Set(),
+      submissionEndsAt: null,
       lastRoundResult: null,
       roundEndsAt: null,
     };
@@ -184,6 +186,9 @@ export class GameManager {
     room.players.forEach((p) => this.dealHand(room, p.id));
     room.currentPrompt = this.pickPrompt(room);
     room.submissions = [];
+    room.submissionEndsAt = room.settings.timeLimit
+      ? Date.now() + room.settings.timeLimit * 1000
+      : null;
     room.status = "playing";
     room.roundNumber += 1;
   }
@@ -241,8 +246,11 @@ export class GameManager {
     room.roundNumber = 1;
     room.trashedPlayerIds.clear();
     room.submissions = [];
-    room.status = "playing";
+    room.submissionEndsAt = room.settings.timeLimit
+      ? Date.now() + room.settings.timeLimit * 1000
+      : null;
     room.lastRoundResult = null;
+    room.status = "playing";
     return room;
   }
 
@@ -254,6 +262,7 @@ export class GameManager {
     room.hands.clear();
     room.trashedPlayerIds.clear();
     room.submissions = [];
+    room.submissionEndsAt = null;
     room.currentPrompt = null;
     room.judgeId = null;
     room.roundNumber = 0;
@@ -333,9 +342,51 @@ export class GameManager {
     const nonJudgeCount = room.players.length - 1;
     if (room.submissions.length >= nonJudgeCount) {
       room.submissions = shuffle(room.submissions);
+      room.submissionEndsAt = null;
       room.status = "judging";
     }
 
+    return { room };
+  }
+
+  autoSubmitTimedOutPlayers(
+    code: string,
+  ): { room: InternalRoom } | { error: string } {
+    const room = this.rooms.get(code);
+    if (!room) return { error: "Room not found" };
+    if (room.status !== "playing" || !room.currentPrompt)
+      return { error: "Not accepting submissions right now" };
+
+    const alreadySubmitted = new Set(room.submissions.map((s) => s.playerId));
+    const timedOutPlayers = room.players.filter(
+      (p) => p.id !== room.judgeId && !alreadySubmitted.has(p.id),
+    );
+
+    for (const player of timedOutPlayers) {
+      const hand = room.hands.get(player.id);
+      if (!hand) continue;
+
+      const cardIds: string[] = [];
+      const usedThisSubmission = new Set<string>();
+      let ok = true;
+
+      for (const cat of room.currentPrompt.slots) {
+        const available = hand[cat].filter(
+          (c) => !usedThisSubmission.has(c.id),
+        );
+        if (available.length === 0) {
+          ok = false;
+          break;
+        }
+        const pick = available[Math.floor(Math.random() * available.length)];
+        cardIds.push(pick.id);
+        usedThisSubmission.add(pick.id);
+      }
+
+      if (ok) this.submitCards(code, player.id, cardIds);
+    }
+
+    room.submissionEndsAt = null;
     return { room };
   }
 
@@ -409,9 +460,12 @@ export class GameManager {
     room.roundNumber += 1;
     room.trashedPlayerIds.clear();
     room.submissions = [];
-    room.status = "playing";
+    room.submissionEndsAt = room.settings.timeLimit
+      ? Date.now() + room.settings.timeLimit * 1000
+      : null;
     room.lastRoundResult = null;
     room.roundEndsAt = null;
+    room.status = "playing";
 
     return room;
   }
@@ -530,6 +584,7 @@ export class GameManager {
       roundNumber: room.roundNumber,
       submittedCount: room.submissions.length,
       submissions: publicSubmissions,
+      submissionEndsAt: room.submissionEndsAt,
       lastRoundResult: room.lastRoundResult,
       roundEndsAt: room.roundEndsAt,
     };

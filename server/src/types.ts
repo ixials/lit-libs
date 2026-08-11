@@ -59,6 +59,7 @@ export interface RoomState {
   roundNumber: number;
   submittedCount: number;
   submissions: { cardIds: string[]; filledText: string }[];
+  submissionEndsAt: number | null;
   lastRoundResult: RoundResult | null;
   roundEndsAt: number | null;
 }
