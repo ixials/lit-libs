@@ -3,5 +3,75 @@
     "id": "prompt-001",
     "template": "My Lockheed Martin internship was a mess. Instead of building a bomb, I built a {0} {1} and got fired.",
     "slots": ["adjective", "noun"]
+  },
+  {
+    "id": "prompt-002",
+    "template": "Last weekend, I invited my friend to the {0} convention. I didn't expect her to {1} them the whole time.",
+    "slots": ["noun", "verb"]
+  },
+  {
+    "id": "prompt-003",
+    "template": "Help! My son is {0}. I need to teach him to {1} before it's too late.",
+    "slots": ["adjective", "verb"]
+  },
+  {
+    "id": "prompt-004",
+    "template": "\"Did you put your {0} into the Goblet of Fire, Harry?\" Dumbledore asked {1}ly.",
+    "slots": ["noun", "adjective"]
+  },
+  {
+    "id": "prompt-005",
+    "template": "Conspiracists claim McDonald's makes their chicken nuggets out of {0} {1}s. I think there might be some truth to what they say.",
+    "slots": ["adjective", "noun"]
+  },
+  {
+    "id": "prompt-006",
+    "template": "Drake's greatest fear: getting {0}ed by a {1}.",
+    "slots": ["verb", "noun"]
+  },
+  {
+    "id": "prompt-007",
+    "template": "Mayor Zohran Mamdani's new decree: {0} every {1} you see.",
+    "slots": ["verb", "noun"]
+  },
+  {
+    "id": "prompt-008",
+    "template": "IShowSpeed performed at the World Cup with a group of {0} {1}s. Honestly, his showing was better than Justin Bieber's.",
+    "slots": ["adjective", "noun"]
+  },
+  {
+    "id": "prompt-009",
+    "template": "I'm not racist, I just don't like {0} {1}s.",
+    "slots": ["adjective", "noun"]
+  },
+  {
+    "id": "prompt-010",
+    "template": "My LinkedIn got hacked! Someone replaced my entire resume with \"Professional {0} who knows how to {1}.\"",
+    "slots": ["noun", "verb"]
+  },
+  {
+    "id": "prompt-011",
+    "template": "The Olympics added a new sport: competitive {0}ing. I think I'd be a natural.",
+    "slots": ["verb"]
+  },
+  {
+    "id": "prompt-012",
+    "template": "Elon Musk announced his next startup: an AI that detects {0}s and automatically {1}s them.",
+    "slots": ["noun", "verb"]
+  },
+  {
+    "id": "prompt-013",
+    "template": "Instead of coal, Santa now {0}s naughty children or gives them {1}s.",
+    "slots": ["verb", "noun"]
+  },
+  {
+    "id": "prompt-014",
+    "template": "Papa went to the store and bought {0} {1}s instead of milk. Mom was not happy.",
+    "slots": ["adjective", "noun"]
+  },
+  {
+    "id": "prompt-015",
+    "template": "Few know that Moses sent a forgotten eleventh plague to Egypt: a swarm of {0} {1}s.",
+    "slots": ["adjective", "noun"]
   }
 ]

@@ -14,7 +14,7 @@ type Hand = {
   adjective: Card[];
   hasTrashed?: boolean;
 };
-type Stacks = Record<Category, string[]>;
+type Stacks = Record<Category, (string | null)[]>;
 
 const CATEGORIES: Category[] = ["noun", "verb", "adjective"];
 const MAX_STACK_HEIGHT = 420;
@@ -55,6 +55,10 @@ export function GameScreen({
   const slots = room.currentPrompt?.slots ?? [];
 
   const [assigned, setAssigned] = useState<(Card | null)[]>([]);
+  const assignedRef = useRef<(Card | null)[]>([]);
+  useEffect(() => {
+    assignedRef.current = assigned;
+  }, [assigned]);
   const [locked, setLocked] = useState(false);
   const [stacks, setStacks] = useState<Stacks>({
     noun: [],
@@ -67,10 +71,11 @@ export function GameScreen({
   const [enteringIds, setEnteringIds] = useState<Set<string>>(new Set());
 
   // Mobile carousel
-  const enteringIndex = useRef<{
+  const pendingTrashRef = useRef<{
     category: Category;
-    index: number;
+    localIndex: number;
   } | null>(null);
+  const [disableSnap, setDisableSnap] = useState(false);
   const [mobileFocusedIndex, setMobileFocusedIndex] = useState(0);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
 
@@ -82,49 +87,47 @@ export function GameScreen({
     setMobileFocusedIndex(0);
     setTrashingId(null);
     setEnteringIds(new Set());
+    pendingTrashRef.current = null;
   }, [room.roundNumber]);
 
   useEffect(() => {
+    const assignedIds = new Set(
+      assignedRef.current.filter((c): c is Card => c !== null).map((c) => c.id),
+    );
     const newlyEntered: string[] = [];
 
     setStacks((prev) => {
       const next: Stacks = { noun: [], verb: [], adjective: [] };
       CATEGORIES.forEach((cat) => {
         const idsInHand = new Set(hand[cat].map((c) => c.id));
-        const kept = prev[cat].filter((id) => idsInHand.has(id));
+        // Keep every real card still in hand, AND keep blank placeholders —
+        // they're not "in hand" but they hold a trashed card's spot open.
+        const kept = prev[cat].filter((id) => id === null || idsInHand.has(id));
         const missing = hand[cat]
           .map((c) => c.id)
-          .filter((id) => !kept.includes(id));
-        newlyEntered.push(...missing);
+          .filter((id) => !kept.includes(id) && !assignedIds.has(id));
 
-        let updated = [...kept];
+        const updated = [...kept];
 
         for (const id of missing) {
-          const replacement =
-            enteringIndex.current?.category === cat
-              ? enteringIndex.current.index
-              : null;
-
-          if (replacement !== null) {
-            updated.splice(replacement, 0, id);
-            enteringIndex.current = null;
+          newlyEntered.push(id);
+          if (
+            pendingTrashRef.current &&
+            pendingTrashRef.current.category === cat
+          ) {
+            const { localIndex } = pendingTrashRef.current;
+            if (updated[localIndex] === null) {
+              updated[localIndex] = id; // fill the exact gap the trash left
+            } else {
+              updated.push(id); // safe fallback, shouldn't normally happen
+            }
+            pendingTrashRef.current = null;
           } else {
-            updated.push(id);
+            updated.push(id); // normal deal (start of round, etc.)
           }
         }
 
         next[cat] = updated;
-
-        if (enteringIndex.current && enteringIndex.current.category === cat) {
-          requestAnimationFrame(() => {
-            setMobileFocusedIndex(enteringIndex.current!.index);
-            mobileScrollRef.current?.scrollTo({
-              left: enteringIndex.current!.index * MOBILE_CARD_STEP,
-              behavior: "instant",
-            });
-            enteringIndex.current = null;
-          });
-        }
       });
       return next;
     });
@@ -156,6 +159,13 @@ export function GameScreen({
       Math.min(idx, Math.max(0, mobileFlatOrder.length - 1)),
     );
   }, [mobileFlatOrder.length]);
+
+  function topIndexOf(order: (string | null)[]): number {
+    for (let i = order.length - 1; i >= 0; i--) {
+      if (order[i] !== null) return i;
+    }
+    return -1;
+  }
 
   function handleMobileScroll() {
     const el = mobileScrollRef.current;
@@ -199,7 +209,8 @@ export function GameScreen({
   function handleStackCardClick(card: Card) {
     if (!canPick) return;
     const order = stacks[card.category];
-    const isTop = order[order.length - 1] === card.id;
+    const topIdx = topIndexOf(order);
+    const isTop = topIdx !== -1 && order[topIdx] === card.id;
 
     if (isTop) {
       selectTopCard(card);
@@ -230,18 +241,20 @@ export function GameScreen({
 
   /** Trashing a card cues an animation */
   function handleTrashClick(category: Category, cardId: string) {
-    if (trashingId) return;
+    if (trashingId || pendingTrashRef.current) return;
 
-    const index = stacks[category].indexOf(cardId);
-    if (index !== -1) {
-      enteringIndex.current = {
-        category,
-        index,
-      };
-    }
-
+    setDisableSnap(true);
     setTrashingId(cardId);
     setTimeout(() => {
+      setStacks((prev) => {
+        const idx = prev[category].indexOf(cardId);
+        if (idx === -1) return prev;
+        const updatedCat = [...prev[category]];
+        updatedCat[idx] = null;
+        pendingTrashRef.current = { category, localIndex: idx };
+        return { ...prev, [category]: updatedCat };
+      });
+
       onTrash(category, cardId);
       setTrashingId(null);
     }, 250);
@@ -276,6 +289,8 @@ export function GameScreen({
     setLocked(true);
     onLock(assigned.map((c) => c!.id));
   }
+
+  const focusedEntry = mobileFlatOrder[mobileFocusedIndex];
 
   const allFilled = assigned.length > 0 && assigned.every((a) => a !== null);
   const filledText = assigned.map((c) => c?.text.toLowerCase() ?? null);
@@ -357,7 +372,7 @@ export function GameScreen({
         )}
 
         {room.status === "judging" && (
-          <div className="rounded-xl border border-ll-blue bg-white p-6 space-y-3">
+          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-3">
             <JudgingPanel
               room={room}
               isJudge={isJudge}
@@ -435,6 +450,7 @@ export function GameScreen({
                 order.length > 1
                   ? (MAX_STACK_HEIGHT - STACK_CARD_HEIGHT) / 2
                   : 0;
+              const topIdx = topIndexOf(order);
 
               if (order.length === 0) return null;
               return (
@@ -448,9 +464,23 @@ export function GameScreen({
                   }}
                 >
                   {order.map((id, i) => {
+                    if (!id) {
+                      return (
+                        <div
+                          key={`empty-${cat}-${i}`}
+                          className="absolute left-0"
+                          style={{
+                            top: i * stackOffset,
+                            zIndex: i,
+                            height: STACK_CARD_HEIGHT,
+                            width: 192,
+                          }}
+                        />
+                      );
+                    }
                     const card = cardById(id);
                     if (!card) return null;
-                    const isTop = i === order.length - 1;
+                    const isTop = i === topIdx;
                     return (
                       <div
                         key={id}
@@ -531,7 +561,9 @@ export function GameScreen({
             <div
               ref={mobileScrollRef}
               onScroll={handleMobileScroll}
-              className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth pt-1 [&::-webkit-scrollbar]:hidden"
+              className={`flex ${
+                disableSnap ? "" : "snap-x snap-mandatory"
+              } overflow-x-auto pt-1 [&::-webkit-scrollbar]:hidden`}
               style={{
                 gap: MOBILE_CARD_GAP,
                 paddingLeft: `calc(50% - ${MOBILE_CARD_WIDTH / 2}px)`,
@@ -540,11 +572,26 @@ export function GameScreen({
               }}
             >
               {mobileFlatOrder.map((entry, i) => {
+                if (!entry.id) {
+                  return (
+                    <div
+                      key={`empty-${entry.category}-${i}`}
+                      className="shrink-0 snap-center"
+                      style={{
+                        width: MOBILE_CARD_WIDTH,
+                        height: STACK_CARD_HEIGHT,
+                        scrollSnapAlign: "center",
+                      }}
+                    />
+                  );
+                }
+
                 const card = cardById(entry.id);
                 if (!card) return null;
                 const isFocused =
                   i ===
                   Math.min(mobileFocusedIndex, mobileFlatOrder.length - 1);
+
                 return (
                   <div
                     key={entry.id}
@@ -582,13 +629,11 @@ export function GameScreen({
               })}
             </div>
 
-            {canPick && mobileFlatOrder[mobileFocusedIndex] && (
+            {canPick && focusedEntry?.id && (
               <div className="mx-auto mt-3 flex gap-3">
                 <button
                   type="button"
-                  onClick={() =>
-                    toggleFlip(mobileFlatOrder[mobileFocusedIndex].id)
-                  }
+                  onClick={() => toggleFlip(focusedEntry.id as string)}
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
                   aria-label="Flip card"
                 >
@@ -597,9 +642,7 @@ export function GameScreen({
                 <button
                   type="button"
                   onClick={() => {
-                    const focusedCard = cardById(
-                      mobileFlatOrder[mobileFocusedIndex].id,
-                    );
+                    const focusedCard = cardById(focusedEntry.id as string);
                     if (focusedCard) setZoomedCard(focusedCard);
                   }}
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
@@ -611,8 +654,10 @@ export function GameScreen({
                   <button
                     type="button"
                     onClick={(e) => {
-                      const entry = mobileFlatOrder[mobileFocusedIndex];
-                      handleTrashClick(entry.category, entry.id);
+                      handleTrashClick(
+                        focusedEntry.category,
+                        focusedEntry.id as string,
+                      );
                     }}
                     className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
                     aria-label="Trash card"
@@ -670,7 +715,7 @@ function JudgingPanel({
   const canGoForward = index < room.submissions.length - 1;
 
   return (
-    <div className="text-center space-y-3">
+    <div className="text-center">
       <h2 className="font-display text-2xl">
         {isJudge ? (
           <>
