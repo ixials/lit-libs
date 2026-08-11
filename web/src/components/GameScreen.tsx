@@ -61,8 +61,14 @@ export function GameScreen({
   });
   const [flippedIds, setFlippedIds] = useState<Set<string>>(new Set());
   const [zoomedCard, setZoomedCard] = useState<Card | null>(null);
+  const [trashingId, setTrashingId] = useState<string | null>(null);
+  const [enteringIds, setEnteringIds] = useState<Set<string>>(new Set());
 
   // Mobile carousel
+  const enteringIndex = useRef<{
+    category: Category;
+    index: number;
+  } | null>(null);
   const [mobileFocusedIndex, setMobileFocusedIndex] = useState(0);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
 
@@ -72,9 +78,13 @@ export function GameScreen({
     setFlippedIds(new Set());
     setZoomedCard(null);
     setMobileFocusedIndex(0);
+    setTrashingId(null);
+    setEnteringIds(new Set());
   }, [room.roundNumber]);
 
   useEffect(() => {
+    const newlyEntered: string[] = [];
+
     setStacks((prev) => {
       const next: Stacks = { noun: [], verb: [], adjective: [] };
       CATEGORIES.forEach((cat) => {
@@ -83,10 +93,52 @@ export function GameScreen({
         const missing = hand[cat]
           .map((c) => c.id)
           .filter((id) => !kept.includes(id));
-        next[cat] = [...kept, ...missing];
+        newlyEntered.push(...missing);
+
+        let updated = [...kept];
+
+        for (const id of missing) {
+          const replacement =
+            enteringIndex.current?.category === cat
+              ? enteringIndex.current.index
+              : null;
+
+          if (replacement !== null) {
+            updated.splice(replacement, 0, id);
+            enteringIndex.current = null;
+          } else {
+            updated.push(id);
+          }
+        }
+
+        next[cat] = updated;
+
+        if (enteringIndex.current && enteringIndex.current.category === cat) {
+          requestAnimationFrame(() => {
+            setMobileFocusedIndex(enteringIndex.current!.index);
+            mobileScrollRef.current?.scrollTo({
+              left: enteringIndex.current!.index * MOBILE_CARD_STEP,
+              behavior: "instant",
+            });
+            enteringIndex.current = null;
+          });
+        }
       });
       return next;
     });
+
+    if (newlyEntered.length > 0) {
+      setEnteringIds((prev) => new Set([...prev, ...newlyEntered]));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setEnteringIds((prev) => {
+            const next = new Set(prev);
+            newlyEntered.forEach((id) => next.delete(id));
+            return next;
+          });
+        });
+      });
+    }
   }, [hand]);
 
   const canPick = room.status === "playing" && !isJudge && !locked;
@@ -172,6 +224,25 @@ export function GameScreen({
         [removed.category]: [...prev[removed.category], removed.id],
       }));
     }
+  }
+
+  /** Trashing a card cues an animation */
+  function handleTrashClick(category: Category, cardId: string) {
+    if (trashingId) return;
+
+    const index = stacks[category].indexOf(cardId);
+    if (index !== -1) {
+      enteringIndex.current = {
+        category,
+        index,
+      };
+    }
+
+    setTrashingId(cardId);
+    setTimeout(() => {
+      onTrash(category, cardId);
+      setTrashingId(null);
+    }, 250);
   }
 
   /** Toggle the flip state of a card */
@@ -389,7 +460,13 @@ export function GameScreen({
                     return (
                       <div
                         key={id}
-                        className="absolute left-0"
+                        className={`absolute left-0 transition-[opacity,transform] duration-200 ease-out ${
+                          trashingId === id
+                            ? "scale-0 rotate-12 opacity-0"
+                            : enteringIds.has(id)
+                              ? "scale-0 opacity-0"
+                              : "scale-100 opacity-100"
+                        }`}
                         style={{
                           top: i * stackOffset,
                           zIndex: i,
@@ -410,7 +487,7 @@ export function GameScreen({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onTrash(card.category, card.id);
+                                  handleTrashClick(card.category, card.id);
                                 }}
                                 className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
                                 aria-label="Trash card"
@@ -481,8 +558,22 @@ export function GameScreen({
                     style={{
                       width: MOBILE_CARD_WIDTH,
                       scrollSnapAlign: "center",
-                      opacity: isFocused ? 1 : 0.4,
-                      transform: isFocused ? "scale(1)" : "scale(0.92)",
+                      transition:
+                        "opacity 200ms ease-out, transform 200ms ease-out",
+                      opacity:
+                        trashingId === entry.id || enteringIds.has(entry.id)
+                          ? 0
+                          : isFocused
+                            ? 1
+                            : 0.4,
+                      transform:
+                        trashingId === entry.id
+                          ? "scale(0) rotate(12deg)"
+                          : enteringIds.has(entry.id)
+                            ? "scale(0)"
+                            : isFocused
+                              ? "scale(1)"
+                              : "scale(0.92)",
                     }}
                   >
                     <SlangCard
@@ -527,7 +618,7 @@ export function GameScreen({
                     type="button"
                     onClick={(e) => {
                       const entry = mobileFlatOrder[mobileFocusedIndex];
-                      onTrash(entry.category, entry.id);
+                      handleTrashClick(entry.category, entry.id);
                     }}
                     className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
                     aria-label="Trash card"
