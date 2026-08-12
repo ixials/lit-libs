@@ -5,5 +5,6 @@ Lit Libs is a friendslop educationmaxxing mashup of Mad Libs and Cards Against H
 ## Credits
 
 IPA: Wiktionary
+Etymology: Wiktionary, Wikipedia, Merriam-Webster, Etymonline, Reddit
 
 Original code and idea by @ixials

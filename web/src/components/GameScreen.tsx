@@ -376,7 +376,7 @@ export function GameScreen({
         )}
 
         {room.status === "judging" && (
-          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-4">
+          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center">
             <JudgingPanel
               room={room}
               isJudge={isJudge}
@@ -723,7 +723,7 @@ function JudgingPanel({
   const canGoForward = index < room.submissions.length - 1;
 
   return (
-    <div className="text-center">
+    <div className="text-center space-y-4">
       <h2 className="font-display text-2xl">
         {isJudge ? (
           <>
@@ -769,13 +769,13 @@ function JudgingPanel({
       {isJudge && submission && (
         <button
           onClick={() => onSelectWinner(index)}
-          className="rounded-lg bg-ll-blue px-10 py-2 font-display text-white text-xl"
+          className="rounded-lg bg-ll-blue px-10 py-2 font-display text-white text-xl mt-2"
         >
           Select
         </button>
       )}
       {!isJudge && (
-        <p className="italic text-slate-400">
+        <p className="italic text-slate-400 mt-2">
           Waiting for {judgeName} to pick a winner...
         </p>
       )}
