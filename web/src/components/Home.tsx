@@ -48,7 +48,7 @@ export function Home({
                   }`}
                 />
                 <button
-                  disabled={!nameOk}
+                  disabled={!nameOk || nameInput.trim() === name.trim()}
                   onClick={() => setName(nameInput.trim())}
                   className="flex h-10 w-10 items-center justify-center rounded-lg bg-ll-blue font-display font-bold text-white disabled:opacity-50"
                   aria-label="Join room"

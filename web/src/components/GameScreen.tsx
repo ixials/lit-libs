@@ -75,6 +75,8 @@ export function GameScreen({
     category: Category;
     localIndex: number;
   } | null>(null);
+  const [pendingTrashCategory, setPendingTrashCategory] =
+    useState<Category | null>(null);
   const [disableSnap, setDisableSnap] = useState(false);
   const [mobileFocusedIndex, setMobileFocusedIndex] = useState(0);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
@@ -88,6 +90,7 @@ export function GameScreen({
     setTrashingId(null);
     setEnteringIds(new Set());
     pendingTrashRef.current = null;
+    setPendingTrashCategory(null);
   }, [room.roundNumber]);
 
   useEffect(() => {
@@ -100,8 +103,7 @@ export function GameScreen({
       const next: Stacks = { noun: [], verb: [], adjective: [] };
       CATEGORIES.forEach((cat) => {
         const idsInHand = new Set(hand[cat].map((c) => c.id));
-        // Keep every real card still in hand, AND keep blank placeholders —
-        // they're not "in hand" but they hold a trashed card's spot open.
+        // Keep every real card still in hand, and keep blank placeholders
         const kept = prev[cat].filter((id) => id === null || idsInHand.has(id));
         const missing = hand[cat]
           .map((c) => c.id)
@@ -117,13 +119,14 @@ export function GameScreen({
           ) {
             const { localIndex } = pendingTrashRef.current;
             if (updated[localIndex] === null) {
-              updated[localIndex] = id; // fill the exact gap the trash left
+              updated[localIndex] = id;
             } else {
-              updated.push(id); // safe fallback, shouldn't normally happen
+              updated.push(id);
             }
             pendingTrashRef.current = null;
+            setPendingTrashCategory(null);
           } else {
-            updated.push(id); // normal deal (start of round, etc.)
+            updated.push(id);
           }
         }
 
@@ -252,6 +255,7 @@ export function GameScreen({
         const updatedCat = [...prev[category]];
         updatedCat[idx] = null;
         pendingTrashRef.current = { category, localIndex: idx };
+        setPendingTrashCategory(category);
         return { ...prev, [category]: updatedCat };
       });
 
@@ -307,7 +311,7 @@ export function GameScreen({
               endsAt={room.submissionEndsAt}
               totalSeconds={room.settings.timeLimit ?? 1}
             />
-            <div className="space-y-3">
+            <div className="space-y-4">
               <h2 className="font-display text-2xl">
                 <span className="text-ll-blue">YOU</span> ARE JUDGING!
               </h2>
@@ -317,7 +321,7 @@ export function GameScreen({
                 filledText={room.currentPrompt.slots.map(() => null)}
               />
 
-              <p className="italic text-slate-400">
+              <p className="italic text-slate-400 mt-3">
                 Waiting on {Math.max(0, nonJudgeCount - room.submittedCount)}{" "}
                 {Math.max(0, nonJudgeCount - room.submittedCount) === 1
                   ? "player"
@@ -334,7 +338,7 @@ export function GameScreen({
               endsAt={room.submissionEndsAt}
               totalSeconds={room.settings.timeLimit ?? 1}
             />
-            <div className="space-y-3">
+            <div className="space-y-4">
               <h2 className="text-center font-display text-2xl">
                 <span className="text-ll-blue">{judge?.name ?? "..."}</span> is
                 judging!
@@ -349,21 +353,21 @@ export function GameScreen({
                 <div className="flex justify-center gap-3">
                   <button
                     onClick={reset}
-                    className="rounded-lg bg-red-400 px-6 py-2 font-display text-white text-xl"
+                    className="rounded-lg bg-red-400 px-6 py-2 font-display text-white text-xl mt-2"
                   >
                     Reset
                   </button>
                   <button
                     onClick={lockIn}
                     disabled={!allFilled}
-                    className="rounded-lg bg-ll-blue px-6 py-2 font-display text-white text-xl disabled:opacity-50"
+                    className="rounded-lg bg-ll-blue px-6 py-2 font-display text-white text-xl disabled:opacity-50 mt-2"
                   >
                     Lock
                   </button>
                 </div>
               )}
               {locked && (
-                <p className="text-center italic text-slate-400">
+                <p className="text-center italic text-slate-400 mt-3">
                   Cards locked in! Waiting on other players...
                 </p>
               )}
@@ -372,7 +376,7 @@ export function GameScreen({
         )}
 
         {room.status === "judging" && (
-          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-3">
+          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-4">
             <JudgingPanel
               room={room}
               isJudge={isJudge}
@@ -383,7 +387,7 @@ export function GameScreen({
         )}
 
         {room.status === "round_end" && room.lastRoundResult && (
-          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-3">
+          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-4">
             <h2 className="font-display text-2xl">
               <span className="text-ll-blue">
                 {room.lastRoundResult.winnerName}
@@ -395,7 +399,7 @@ export function GameScreen({
               </span>
             </h2>
 
-            <div className="flex h-[120px] items-center justify-center">
+            <div className="flex min-h-[80px] items-center justify-center">
               <p className="text-lg italic leading-relaxed">
                 &ldquo;{room.lastRoundResult.filledText}&rdquo;
               </p>
@@ -408,10 +412,10 @@ export function GameScreen({
         )}
 
         {room.status === "game_over" && (
-          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-3">
+          <div className="rounded-xl border border-ll-blue bg-white p-6 text-center space-y-4">
             <h2 className="font-display text-2xl text-ll-blue">GAME OVER!</h2>
 
-            <div className="flex h-[120px] items-center justify-center">
+            <div className="flex min-h-[80px] items-center justify-center">
               <p className="text-lg">
                 {winner && (
                   <span className="font-bold" style={{ color: winner.color }}>
@@ -504,7 +508,7 @@ export function GameScreen({
                           flipped={isTop && flippedIds.has(id)}
                           onClick={() => handleStackCardClick(card)}
                         />
-                        {isTop && canPick && (
+                        {isTop && canPick && pendingTrashCategory !== cat && (
                           <div className="absolute -right-10 bottom-2 z-30 flex flex-col gap-2">
                             {!hasTrashed && (
                               <button
@@ -629,41 +633,45 @@ export function GameScreen({
               })}
             </div>
 
-            {canPick && focusedEntry?.id && (
-              <div className="mx-auto mt-3 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => toggleFlip(focusedEntry.id as string)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
-                  aria-label="Flip card"
-                >
-                  <RotateCw size={14} strokeWidth={3} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const focusedCard = cardById(focusedEntry.id as string);
-                    if (focusedCard) setZoomedCard(focusedCard);
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
-                  aria-label="Zoom card"
-                >
-                  <ZoomIn size={14} strokeWidth={3} />
-                </button>
-                {!hasTrashed && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      handleTrashClick(
-                        focusedEntry.category,
-                        focusedEntry.id as string,
-                      );
-                    }}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
-                    aria-label="Trash card"
-                  >
-                    <Trash size={14} strokeWidth={3} />
-                  </button>
+            {canPick && focusedEntry && (
+              <div className="mx-auto mt-3 flex h-8 gap-3">
+                {focusedEntry.id && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => toggleFlip(focusedEntry.id as string)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
+                      aria-label="Flip card"
+                    >
+                      <RotateCw size={14} strokeWidth={3} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const focusedCard = cardById(focusedEntry.id as string);
+                        if (focusedCard) setZoomedCard(focusedCard);
+                      }}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue"
+                      aria-label="Zoom card"
+                    >
+                      <ZoomIn size={14} strokeWidth={3} />
+                    </button>
+                    {!hasTrashed && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleTrashClick(
+                            focusedEntry.category,
+                            focusedEntry.id as string,
+                          )
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-ll-blue bg-white text-ll-blue hover:bg-ll-blue hover:text-white"
+                        aria-label="Trash card"
+                      >
+                        <Trash size={14} strokeWidth={3} />
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -738,7 +746,7 @@ function JudgingPanel({
           <ArrowLeft size={24} strokeWidth={4} />
         </button>
 
-        <div className="flex h-[120px] flex-1 items-center justify-center">
+        <div className="flex min-h-[80px] flex-1 items-center justify-center">
           {submission ? (
             <p className="text-lg leading-relaxed">{submission.filledText}</p>
           ) : (
